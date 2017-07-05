@@ -9,5 +9,5 @@ mod game;
 use game::Game;
 
 pub fn main() {
-    Game::start("title", 800, 600);
+    Game::start("test title", 800, 600);
 }

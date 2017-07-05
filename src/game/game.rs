@@ -1,14 +1,16 @@
 use glutin;
-use glutin::WindowEvent::{KeyboardInput, Closed};
-use glutin::Event::WindowEvent;
-use glutin::{VirtualKeyCode, EventsLoop};
+use gfx;
+use gfx::Device;
+use gfx::handle::{RenderTargetView, DepthStencilView};
 use gfx_window_glutin;
 use device_gl;
-use gfx::{format, Device};
 
 
-pub type ColorFormat = format::Rgba8;
-pub type DepthFormat = format::DepthStencil;
+pub type ColorFormat = gfx::format::Rgba8;
+pub type DepthFormat = gfx::format::DepthStencil;
+
+const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+
 
 pub struct Game<'a> {
     //assets: AssetManager<'b>,
@@ -22,7 +24,9 @@ pub struct Game<'a> {
     window: glutin::Window,
     device: device_gl::Device,
     factory: device_gl::Factory,
-    events_loop: &'a EventsLoop,
+    events_loop: &'a glutin::EventsLoop,
+    rtv: RenderTargetView<device_gl::Resources, ColorFormat>,
+    dsv: DepthStencilView<device_gl::Resources, DepthFormat>,
     running: bool,
 }
 
@@ -33,7 +37,7 @@ impl<'a> Game<'a> {
             .with_dimensions(win_w, win_h)
             .with_vsync();
         let events_loop = glutin::EventsLoop::new();
-        let (window, device, factory, _rtv, _stv) =
+        let (window, device, factory, rtv, dsv) =
             gfx_window_glutin::init::<ColorFormat, DepthFormat>(builder, &events_loop);
 
         let mut game = Game {
@@ -41,6 +45,8 @@ impl<'a> Game<'a> {
             device,
             factory,
             events_loop: &events_loop,
+            rtv,
+            dsv,
             running: true,
         };
 
@@ -48,17 +54,29 @@ impl<'a> Game<'a> {
     }
 
     fn run(&mut self) {
+        let mut encoder: gfx::Encoder<_, _> = self.factory.create_command_buffer().into();
         while self.running {
-            self.events_loop
-                .poll_events(|e| match e {
-                                 WindowEvent {
-                                     event: KeyboardInput(_, _, Some(VirtualKeyCode::Escape), _), ..
-                                 } |
-                                 WindowEvent { event: Closed, .. } => {
-                    self.running = false;
+            self.events_loop.poll_events(|glutin::Event::WindowEvent {
+                 event, ..
+             }| {
+                use glutin::WindowEvent::*;
+                use glutin::VirtualKeyCode;
+                match event {
+                    KeyboardInput(_, _, Some(VirtualKeyCode::Escape), _) |
+                    Closed => {
+                        self.running = false;
+                    }
+                    Resized(_, _) => {
+                        //gfx_window_glutin::update_views(
+                        //    &window, &mut self.rtv, &mut depth_stencil);
+                        // TODO: &mut rtv & dsv?
+                    }
+                    _ => {}
                 }
-                                 _ => {}
-                             });
+            });
+            encoder.clear(&self.rtv, BLACK);
+            // draw here
+            encoder.flush(&mut self.device);
             self.window.swap_buffers().unwrap();
             self.device.cleanup();
         }
