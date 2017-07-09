@@ -67,8 +67,7 @@ impl<'a> Game<'a> {
                         self.running = false;
                     }
                     Resized(_, _) => {
-                        //gfx_window_glutin::update_views(
-                        //    &window, &mut self.rtv, &mut depth_stencil);
+                        gfx_window_glutin::update_views(&self.window, &mut self.rtv, &mut self.dsv);
                         // TODO: &mut rtv & dsv?
                     }
                     _ => {}
