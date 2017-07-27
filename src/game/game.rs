@@ -5,9 +5,8 @@ use gfx::handle::{RenderTargetView, DepthStencilView};
 use gfx_window_glutin;
 use device_gl;
 
+use render::{ColorFormat, DepthFormat};
 
-pub type ColorFormat = gfx::format::Rgba8;
-pub type DepthFormat = gfx::format::DepthStencil;
 
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
@@ -68,7 +67,6 @@ impl<'a> Game<'a> {
                     }
                     Resized(_, _) => {
                         gfx_window_glutin::update_views(&self.window, &mut self.rtv, &mut self.dsv);
-                        // TODO: &mut rtv & dsv?
                     }
                     _ => {}
                 }
